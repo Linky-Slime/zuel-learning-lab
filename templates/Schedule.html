@@ -1,0 +1,339 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<style type="text/css">
+	div1{position:relative;}
+	div1 p{position:absolute;left:120px;top:-100px;font-size:18pt;text_align:center}
+</style>
+{% endblock %}
+
+{% block sidebar %}
+                <li class="active"><a href="schedule">每日打卡</a></li>
+                <li><a href="create_card_meta">分组管理</a></li>
+                <li><a href="memory_meta">开始学习</a></li>
+                <li><a href="memorize_meta">学习记录</a></li>
+                <li><a href="user">个人信息</a></li>
+{% endblock %}
+
+{% block content %}
+<script src="static/js/NoSleep.min.js"></script>
+
+<script>
+var csrftoken="{{ csrf_token() }}"
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken)
+        }
+    }
+})
+
+    function pass_args(obj) {
+<!--        $("#missionid").href="https://www.baidu.com";-->
+    document.getElementById("missionid").href="/change_mission"+obj[1];
+    }
+        //触发模态框的同时调用此方法
+
+function postInfo(obj) {
+    var value = obj[1];
+    var id = obj[0]
+    $.ajax({
+        type: "post",
+        url: "/type_mission",
+        data: "&id=" + id + "&result=" + value,
+        dataType: '',
+        contentType: "application/x-www-form-urlencoded; charset=utf-8",
+        success: function(result) {
+            //location.reload();
+        }
+    }).done(function(){
+   $('#message').html('test');
+   window.location.href = '/schedule';
+}).fail(function(response){
+   $('#message').html(response['responseText']);
+});
+}
+
+function editInfo(obj) {
+    //向模态框中传值
+    $('#ch_id').val(obj[0]);
+    $('#ch_name').val(obj[1]);
+    $('#ch_time').val(obj[2]);
+    $('#ch_fight').val(obj[3]);
+}
+
+function update() {
+    //获取模态框数据
+    var id = $('#ch_id').val();
+    var name = $('#ch_name').val();
+    var time = $('#ch_time').val();
+    var fight = $('#ch_fight').val();
+    $.ajax({
+        type: "post",
+        url: "/change_mission",
+        data: "&id=" + id + "&name=" + name + "&time=" + time + "&fight=" + fight,
+        dataType: '',
+        contentType: "application/x-www-form-urlencoded; charset=utf-8",
+        success: function(result) {
+            //location.reload();
+        }
+    }).done(function(){
+   $('#message').html('test');
+   window.location.href = '/schedule';
+}).fail(function(response){
+   $('#message').html(response['responseText']);
+});
+}
+
+function delate() {
+    //获取模态框数据
+    var id = $('#ch_id').val();
+    $.ajax({
+        type: "post",
+        url: "/delate_mission",
+        data: "&id=" + id,
+        dataType: '',
+        contentType: "application/x-www-form-urlencoded; charset=utf-8",
+        success: function(result) {
+            //location.reload();
+        }
+    }).done(function(){
+   $('#message').html('test');
+   window.location.href = '/schedule';
+}).fail(function(response){
+   $('#message').html(response['responseText']);
+});
+}
+let hour = 0;
+let minute = 0;
+let second = 0;
+var percent = 0;
+var id_time = 0;
+var full_time = 2;
+var full_len = 5;
+let timer = null;
+var noSleep = new NoSleep();
+
+function plottime(obj){
+    id_time = obj[0]
+    full_time = obj[1]
+    document.getElementById("full_time"+`${id_time}`).textContent=(obj[1]);
+    document.getElementById("p_fight"+`${id_time}`).textContent=(obj[2]);
+    len = obj[2].length;
+    if (len<5){len=5;}
+    if (len>10){len=10;}
+    wid = 200+len*30
+    document.getElementById("p_img"+`${id_time}`).setAttribute('style',"height:300px;margin:0 auto; width:"+wid+'px');
+}
+
+function start() {
+	clearInterval(timer)
+	noSleep.enable();
+	timer = setInterval(() => {
+	if (second === 60){
+		++minute;
+		percent = (hour*60+minute)/(full_time*60)*100
+		if (minute === 60){
+			++hour;
+			minute = 0;
+		}
+		percent = (hour*60+minute)/(full_time*60)*100
+		document.getElementById("progress"+`${id_time}`).setAttribute('style',"min-width: 2em;width:"+(`${percent}`+'%'));
+		document.getElementById("percent"+`${id_time}`).textContent=(`${percent.toFixed(1)}`+'%');
+		if (percent>0.45) {document.getElementById("h"+`${id_time}`).removeAttribute('disabled');}
+		if (percent>0.9) {document.getElementById("f"+`${id_time}`).removeAttribute('disabled');}
+		second = 0;
+	}
+	++second;
+	document.getElementById("abc"+`${id_time}`).textContent=('计时：'+`${hour}`+'：'+`${minute}`+'：'+`${second}`);
+	}, 1000);
+
+};
+
+function stop(){
+	clearInterval(timer);
+	noSleep.disable();
+	hour = 0;
+	minute = 0;
+	second = 0;
+	document.getElementById("abc"+`${id_time}`).textContent=('');
+	document.getElementById("progress"+`${id_time}`).setAttribute('style',"min-width: 2em;width:"+('0%'));
+	document.getElementById("percent"+`${id_time}`).textContent=('0%');
+}
+
+function pause(){
+	clearInterval(timer);
+	noSleep.disable();
+	document.getElementById("abc"+`${id_time}`).textContent=('暂停中：'+`${hour}`+'：'+`${minute}`+'：'+`${second}`);
+}
+
+function speedup(){
+	clearInterval(timer)
+	noSleep.enable();
+	timer = setInterval(() => {
+	if (second >= 60){
+		++minute;
+		if (minute === 60){
+			++hour;
+			minute = 0;
+		}
+		percent = (hour*60+minute)/(full_time*60)*100
+		document.getElementById("progress"+`${id_time}`).setAttribute('style',"min-width: 2em;width:"+(`${percent}`+'%'));
+		document.getElementById("percent"+`${id_time}`).textContent=(`${percent.toFixed(1)}`+'%');
+		if (percent>0.4) {document.getElementById("f"+`${id_time}`).removeAttribute('disabled');}
+		second = 0;
+	}
+	++second;
+	++second;
+	document.getElementById("abc"+`${id_time}`).textContent=('计时：'+`${hour}`+'：'+`${minute}`+'：'+`${second}`);
+	}, 1000);
+}
+
+document.onvisibilitychange=function(){
+  if(document.visibilityState=="visible"){
+      timer=setInterval(slidemove, 1000);
+  }else{
+      clearInterval(timer);
+      noSleep.disable();
+      document.getElementById("abc"+`${id_time}`).textContent=('暂停中：'+`${hour}`+'：'+`${minute}`+'：'+`${second}`);
+  }
+}
+</script>
+
+<h1>计划完成了吗？</h1>
+
+<table class="table table-hover">
+    <thead>
+    <tr>
+        <th>事情</th>
+        <th>时间</th>
+        <th>鼓励自己</th>
+        <th>打卡</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for event in dat %}
+    <tr>
+        <th scope="row">{{ event.mission_name }}</th>
+        <td>{{ event.mission_time }}</td>
+        <td>{{ event.mission_fight }}</td>
+        <td>
+            <div class="input-group-btn">
+                {% if event.mission_active %}
+                <button type="button" name="button{{event.mission_id}}" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{event.mission_active}} <span class="caret"></span></button>
+                {% else %}
+                <button type="button" disabled="disabled" name="disabled_button{{event.mission_id}}" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{event.mission_active}} <span class="caret"></span></button>
+                {% endif %}
+                <ul class="dropdown-menu">
+                    <li><a href="#" data-toggle="modal" onclick="plottime({{[event.mission_id,event.mission_time,event.mission_fight]}})" data-target="#myModal{{event.mission_id}}" >计时打卡</a></li>
+                    <li><a href="#" name="finish{{event.mission_id}}" onclick="postInfo({{[event.mission_id,1]}})">做完了</a></li>
+                    <li><a href="#" name="full{{event.mission_id}}" onclick="postInfo({{[event.mission_id,2]}})">做了一半</a></li>
+                    <li><a href="#" name="giveup{{event.mission_id}}" onclick="postInfo({{[event.mission_id,3]}})">开摆</a></li>
+                    <li role="separator" class="divider"></li>
+                    <li><a href="#" data-toggle="modal" data-target="#myModal" onclick="editInfo({{[event.mission_id,event.mission_name,event.mission_time,event.mission_fight]}})">修改</a></li>
+                </ul>
+            </div>
+        </td>
+    </tr>
+    <div class="modal fade" id="myModal{{event.mission_id}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" onclick="pause()" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel2">计时打卡</h4>
+                </div>
+                <div class="modal-body">
+                    <div1>
+                        <img id="p_img{{event.mission_id}}" src="static/fonts/bailan.png" style="width:500px; height:300px;margin:0 auto;"/>
+                        <p id="p_fight{{event.mission_id}}">开摆开摆</p>
+                        <h3 >目标时间<span id="full_time{{event.mission_id}}">4</span>小时</h3>
+                        <h2 id="abc{{event.mission_id}}" style="text-align:center"> </h2>
+                    </div1>
+                </div>
+                <div class="btn-group" role="group" aria-label="...">
+                    <button type="button" disabled="disabled" class="btn btn-default" id="f{{event.mission_id}}" onclick="postInfo({{[event.mission_id,1]}})">完成</button>
+                    <button type="button" disabled="disabled" class="btn btn-default" id="h{{event.mission_id}}" onclick="postInfo({{[event.mission_id,2]}})">完成一半</button>
+                    <button type="button" class="btn btn-default" id="g{{event.mission_id}}" onclick="postInfo({{[event.mission_id,3]}})">开摆</button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-info" onclick="start()">开始</button>
+                    <button type="button" class="btn btn-info" onclick="pause()">暂停</button>
+                    <button type="button" class="btn btn-warning" onclick="speedup()">时间加速</button>
+                    <button type="button" class="btn btn-default" onclick="stop()" data-dismiss="modal">结束打卡</button>
+                </div>
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped active" id="progress{{event.mission_id}}" role="progressbar" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em;width: 0%">
+                        <div id="percent{{event.mission_id}}">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% endfor %}
+    </tbody>
+</table>
+
+
+
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"  aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Modal title</h4>
+            </div>
+            <div class="modal-body">
+<!--                <h4 class="modal-title" id="missionid"></h4>-->
+                <li><a href="#" id="missionid">做完了</a></li>
+                <div class="modal-body">
+                    <input type="hidden" id="ch_id" value=""/>
+                    <input class="form-control" name="stuno" id="ch_name" required="" type="text" value="">
+                    <select class="form-control" id="ch_time" name="time">
+                        <option value="1">1小时</option>
+                        <option value="2">2小时</option>
+                        <option value="3">3小时</option>
+                        <option value="4">4小时</option>
+                        <option value="5">5小时</option>
+                        <option value="1" selected>做多久？</option>
+                    </select>
+                    <input class="form-control" name="stuname" id="ch_fight" required="" type="text" value="">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-info" onclick="update()">Save changes</button>
+                <button type="button" class="btn btn-warning" onclick="delate()">delete mission</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<h2>添加新计划吧！</h2>
+<form method="post">
+    {{ schedule2.csrf_token }}
+    <div class="input-group">
+        <div class="col-sm-3 col-md-2">
+    <span class="input-group-btn">
+        {{ schedule2.event_submit(class="btn btn-default") }}
+      </span>
+        </div>
+        <div class="col-sm-3 col-md-3">
+            {{ schedule2.event_name(class="form-control",placeholder="新事情") }}
+        </div>
+        <div class="col-sm-3 col-md-3">
+            {{ schedule2.event_time(class="form-control",placeholder="做多久") }}
+        </div>
+        <div class="col-sm-3 col-md-2">
+            {{ schedule2.event_fight(class="form-control",placeholder="加油") }}
+        </div>
+    </div><!-- /input-group -->
+</form>
+
+{% endblock %}
+
+
+

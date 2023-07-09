@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import qux %}
+
+{% block sidebar %}
+{% set name='bar' %}
+                <li><a href="schedule">每日打卡</a></li>
+                <li><a href="create_card_meta">分组管理</a></li>
+                <li><a href="memory_meta">开始学习</a></li>
+                <li class="active"><a href="memorize_meta">学习记录</a></li>
+                <li><a href="user">个人信息</a></li>
+{% endblock %}
+
+{% block content %}
+
+<script>
+var csrftoken="{{ csrf_token() }}"
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken)
+        }
+    }
+})
+
+function editInfo(obj) {
+    //向模态框中传值
+    $('#card_id').val(obj[0]);
+    $('#question').val(obj[1]);
+    $('#tag').val(obj[2]);
+    $('#rank').val(obj[3]);
+    $('#answer').val(obj[4]);
+}
+
+function update(obj) {
+    //获取模态框数据
+    var id = $('#card_id').val();
+    var question= $('#question').val();
+    var tag = $('#tag').val();
+    var rank = $('#rank').val();
+    var answer = $('#answer').val();
+    var tag_id = obj[0];
+    var page = obj[1];
+    $.ajax({
+        type: "post",
+        url: "/change_card",
+        data: "&id=" + id + "&question=" + question + "&tag=" + tag + "&rank=" + rank + "&answer=" + answer,
+        dataType: '',
+        contentType: "application/x-www-form-urlencoded; charset=utf-8",
+        success: function(result) {
+            //location.reload();
+        }
+    }).done(function(){
+   $('#message').html('test');
+   window.location.href = '/memorize'+ tag_id + '+' + page;
+}).fail(function(response){
+   $('#message').html(response['responseText']);
+});
+}
+
+function delate(obj) {
+    //获取模态框数据
+    var id = $('#card_id').val();
+    var tag_id = obj[0];
+    var page = obj[1];
+    $.ajax({
+        type: "post",
+        url: "/delate_card",
+        data: "&id=" + id,
+        dataType: '',
+        contentType: "application/x-www-form-urlencoded; charset=utf-8",
+        success: function(result) {
+            //location.reload();
+        }
+    }).done(function(){
+   $('#message').html('test');
+   window.location.href = '/memorize'+ tag_id + '+' + page;
+}).fail(function(response){
+   $('#message').html(response['responseText']);
+});
+}
+</script>
+
+
+
+<div class="well editPanel">
+    <h2>选择分组</h2>
+    <br>
+    <div class="btn-group" role="group" aria-label="...">
+        {% for tag in tags %}
+            {% if (tag.tag_id==tag_id) %}
+                <a class="btn btn-primary" href= "{{ 'memorize%d'%tag.tag_id+'+%d'%page }}" role="button">{{ tag.tag_name }}</a>
+            {% else %}
+                <a class="btn btn-default" href= "{{ 'memorize%d'%tag.tag_id+'+%d'%page }}" role="button">{{ tag.tag_name }}</a>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+<div class="well editPanel">
+
+    <table class="table table-hover">
+        <thead>
+        <tr>
+            <th>问题</th>
+            <th>记忆进度</th>
+            <th>上次背诵</th>
+            <th>修改</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for card in cards %}
+        <tr>
+            <th scope="row"><button type="button" class="btn btn-default btn-sm"  data-toggle="modal" data-target="#Modal{{card.card_id}}"><span class="
+glyphicon glyphicon-zoom-in" aria-hidden="true"></span></button>{{ card.question }}</th>
+            <td>{{ card.memory }}</td>
+            <td>{{ card.sign_time }}</td>
+            <td>
+                <div class="input-group-btn">
+                    <button type="button" data-toggle="modal" data-target="#myModal" onclick="editInfo({{[card.card_id,card.question,card.card_tag,card.rank,card.answer]}})" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-pencil" aria-hidden="true">修改</span></button>
+                </div>
+            </td>
+        </tr>
+        <div class="modal fade" id="Modal{{card.card_id}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" >答案</h4>
+                    </div>
+                    <div class="modal-body">
+                        {{card.answer}}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        </tbody>
+    </table>
+
+
+    <nav>
+        <ul class="pagination">
+            {%if pagination.has_prev%}
+            <li class="page-item "><a class="page-link" href="{{url_for('memorize',tagid=tag_id,page=pagination.page-1)}}" rel="external nofollow" >上一页</a></li>
+            {%else%}
+            <li class="page-item disabled"><a class="page-link" href="#" rel="external nofollow"  rel="external nofollow"  rel="external nofollow" >上一页</a></li>
+            {%endif%}
+
+            {%for pa in pagination.iter_pages()%}
+            {%if pa%}
+            <li class="page-item {%if pa==pagination.page%}active{%endif%}"><a class="page-link" href="{{url_for('memorize',tagid=tag_id,page=pa)}}" rel="external nofollow" >{{pa}}</a></li>
+            {%else%}
+            <li class="page-item disabled"><a class="page-link" href="#" rel="external nofollow"  rel="external nofollow"  rel="external nofollow" >&hellip;</a></li>
+            {%endif%}
+
+            {%endfor%}
+
+            {%if pagination.has_next%}
+            <li class="page-item"><a class="page-link" href="{{url_for('memorize',tagid=tag_id,page=pagination.page+1)}}" rel="external nofollow" >下一页</a></li>
+            {%else%}
+            <li class="page-item disabled"><a class="page-link" href="#" rel="external nofollow"  rel="external nofollow"  rel="external nofollow" >下一页</a></li>
+            {%endif%}
+
+        </ul>
+    </nav>
+
+</div>>
+
+
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Modal title</h4>
+            </div>
+            <div class="modal-body">
+<!--                <h4 class="modal-title" id="missionid"></h4>-->
+                <div class="modal-body">
+                    <h3>问题</h3>
+                    <input type="hidden" id="card_id" value=""/>
+                    <input class="form-control" id="question" name="question" required="" type="text" value="">
+                    <h3>分组</h3>
+                    <select class="form-control"  id="tag" name="tag">
+                        {% for tag in tags %}
+                        <option value="{{tag.tag_id}}">{{tag.tag_name}}</option>
+                        {% endfor%}
+                    </select>
+                    <h3>难度</h3>
+                    <select class="form-control"  id="rank" name="rank">
+                        <option value="1">简单</option>
+                        <option selected="" value="2">正常</option>
+                        <option value="3">困难</option>
+                        <option value="4">巨难</option>
+                        <option value="5">记了也白记</option>
+                    </select>
+                    <h3>解答</h3>
+                    <textarea class="form-control" name="answer" id="answer" rows="8">优质解答：我不知道</textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-info" onclick="update({{[tag_id,page]}})">保存</button>
+                <button type="button" class="btn btn-warning" onclick="delate({{[tag_id,page]}})">删除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

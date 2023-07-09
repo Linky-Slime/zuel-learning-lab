@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import qux %}
+
+{% block sidebar %}
+{% set name='bar' %}
+                <li><a href="schedule">每日打卡</a></li>
+                <li><a href="create_card_meta">分组管理</a></li>
+                <li><a href="memory_meta">开始学习</a></li>
+                <li><a href="memorize_meta">学习记录</a></li>
+                <li class="active"><a href="user">个人信息</a></li>
+{% endblock %}
+
+{% block head %}
+<style type="text/css">
+.calendar{
+	width:100%;
+	height:400px;
+	box-shadow:0px 1px 1px rgba(0,0,0,0.1);
+	//border: 5px outset #a8a8a8;
+	display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.body{
+    width:100%;
+	height:400px;
+
+}
+
+.body-list ul{
+	width:100%;
+	font-family:arial;
+	font-weight:bold;
+	font-size:14px;
+}
+.body-list ul li{
+	width:14.28%;
+	height:36px;
+	line-height:36px;
+	list-style-type:none;
+	display:block;
+	box-sizing:border-box;
+	float:left;
+	text-align:center;
+}
+
+.lightgrey{
+	color:#a8a8a8; /*浅灰色*/
+}
+.darkgrey{
+	color:#565656; /*深灰色*/
+}
+.green{
+	color:#B2A4FF; /*绿色*/
+}
+
+.gold{
+    color:#FEFF86;
+}
+
+.col0{
+    background:linear-gradient(10deg,#FFFFFF, 1%, #EEF1FF);
+    color:#a8a8a8; /*浅灰色*/
+}
+.col3{
+    background:linear-gradient(10deg,#FFFFFF, 10%, #EEF1FF);
+    color:#a8a8a8; /*浅灰色*/
+}
+.col2{
+    background:linear-gradient(10deg,#AAC4FF, 40%, #EEF1FF);
+    color:#a8a8a8; /*浅灰色*/
+}
+.col1{
+    background:linear-gradient(10deg,#B2A4FF, 62%, #AAC4FF);
+    color:#FFD966;
+}
+
+.greenbox{
+	border: 3px outset #5837D0 ;
+	background:#e9f8df; /*浅绿色背景*/
+}
+
+.colbox0{
+	border:3px outset #CCA8E9;
+    background:linear-gradient(10deg,#FFFFFF, 1%, #EEF1FF);
+    color:#a8a8a8; /*浅灰色*/
+}
+.colbox3{
+	border:3px outset #CCA8E9;
+    background:linear-gradient(10deg,#FFFFFF, 1%, #EEF1FF);
+    color:#a8a8a8; /*浅灰色*/
+}
+.colbox2{
+	border:3px outset #CCA8E9;
+    background:linear-gradient(10deg,#AAC4FF, 50%, #EEF1FF);
+    color:#a8a8a8; /*浅灰色*/
+}
+.colbox1{
+	border:1px solid #CCA8E9;
+    background:linear-gradient(10deg,#AAC4FF, 62%, #EEF1FF);
+    color:#FFD966;
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<script>
+var month_olympic = [31,29,31,30,31,30,31,31,30,31,30,31];
+var month_normal = [31,28,31,30,31,30,31,31,30,31,30,31];
+var month_name = ["January","Febrary","March","April","May","June","July","Auguest","September","October","November","December"];
+var holder = document.getElementById("days");
+var prev = document.getElementById("prev");
+var next = document.getElementById("next");
+var ctitle = document.getElementById("calendar-title");
+var cyear = document.getElementById("calendar-year");
+
+var to_date = new Date();
+var to_year = to_date.getFullYear();
+var to_month = to_date.getMonth();
+var to_day = to_date.getDate();
+
+var start = '2022-3-10'
+var start2 = new Date('2022-3-10');
+var now = new Date(to_date.getFullYear()+'-'+(to_date.getMonth()+1)+'-'+to_date.getDate());
+
+var diffTime = Math.abs(now - start2);
+var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+var log = ''
+
+function createmodal(obj) {
+    start = obj[0];
+    start2 = new Date(start);
+    diffTime = Math.abs(now - start2);
+    diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    log = obj[1];
+    log = log+'0'.repeat(diffDays-log.length);
+    refreshDate()
+}
+
+function state(type) {
+    var a = ''
+	if(type==0){
+	    a="未签到"
+	}else if(type==1){
+	    a="完成任务"
+	}else if(type==2){
+	    a="完成一半"
+	}else if(type==3){
+	    a="开摆"
+	}
+	return (a);
+}
+
+function dayStart(month, year) {
+	var tmpDate = new Date(year, month, 1);
+	return (tmpDate.getDay());
+}
+function daysMonth(month, year) {
+	var tmp = year % 4;
+	if (tmp == 0) {
+		return (month_olympic[month]);
+	} else {
+		return (month_normal[month]);
+	}
+}
+function refreshDate(){
+	var str = "";
+	var totalDay = daysMonth(to_month, to_year); //获取该月总天数
+	var firstDay = dayStart(to_month, to_year); //获取该月第一天是星期几
+	var yuechu = new Date(to_year+'-'+(to_month+1)+'-'+1);
+	var yuedi = new Date(to_year+'-'+(to_month+1)+'-'+totalDay);
+    var diffTime1 = (yuechu - start2);
+    var diffDays1 = Math.ceil(diffTime1 / (1000 * 60 * 60 * 24));
+    var diffTime2 = (yuedi - start2);
+    var diffDays2 = Math.ceil(diffTime2 / (1000 * 60 * 60 * 24));
+
+	var myclass;
+	for(var i=1; i<firstDay; i++){
+		str += "<li></li>"; //为起始日之前的日期创建空白节点
+	}
+	for(var i=1; i<=totalDay; i++){
+		if((i<to_day && to_year==to_date.getFullYear() && to_month==to_date.getMonth()) || to_year<to_date.getFullYear() || ( to_year==to_date.getFullYear() && to_month<to_date.getMonth())){
+			myclass = " class='lightgrey'";
+			if((diffDays1>=0)&&(diffDays2>=0)){
+			    myclass = " title='" + state(log.charAt(i+diffDays1-1)) +"'" +" class='col"+log.charAt(i+diffDays1-1)+"'"
+			}else if((diffDays1<0)&&(diffDays2>=0)){
+			    if(i<(-diffDays1+1)){
+			        myclass = " class='lightgrey'";
+			    }else{
+			        myclass = " title='" + state(log.charAt(i+diffDays1-1)) +"'" +" class='col"+log.charAt(i+diffDays1-1)+"'"
+			    }
+			}
+		}else if (i==to_day && to_year==to_date.getFullYear() && to_month==to_date.getMonth()){
+			myclass = " title='" + state(log.charAt(i+diffDays1-1)) +"'" +" class='colbox"+log.charAt(i+diffDays1-2)+"'"
+		}else{
+			myclass = " class='darkgrey'"; //当该日期在今天之后时，以深灰字体显示
+		}
+		str += "<li"+myclass+">"+i+"</li>"; //创建日期节点
+	}
+	document.getElementById("days").innerHTML = str;
+	document.getElementById("month").innerHTML = month_name[to_month]; //设置英文月份显示
+	document.getElementById("year").innerHTML = to_year; //设置年份显示
+	//document.getElementById("diff1").innerHTML = diffDays1; //设置年份显示
+	//document.getElementById("diff2").innerHTML = diffDays2; //设置年份显示
+}
+
+function prev_f(){
+	to_month--;
+	if(to_month<0){
+		to_year--;
+		to_month = 11;
+	}
+	refreshDate();
+}
+function back_f(){
+	to_month++;
+	if(to_month>11){
+		to_year++;
+		to_month = 0;
+	}
+	refreshDate();
+	//document.getElementById("year").innerHTML = log;
+}
+</script>
+
+
+<h2>{{ info.username }}今天好好学习了吗</h2>
+<div class="row placeholders">
+    <div class="col-xs-6 col-sm-3 placeholder">
+        <a href="schedule"><img src="static/fonts/img1.jpg" width="200" height="200" class="img-responsive" alt="Generic placeholder thumbnail"></a>
+        <h4>每日打卡</h4>
+        <span class="text-muted">设定每日任务，计时打卡</span>
+    </div>
+    <div class="col-xs-6 col-sm-3 placeholder">
+        <a href="memory_meta"><img src="static/fonts/img2.jpg" width="200" height="200" class="img-responsive" alt="Generic placeholder thumbnail"></a>
+        <h4>开始学习</h4>
+        <span class="text-muted">根据艾宾浩斯遗忘曲线设计的背诵系统</span>
+    </div>
+    <div class="col-xs-6 col-sm-3 placeholder">
+        <a href="create_card_meta"><img src="static/fonts/img3.jpg" width="200" height="200" class="img-responsive" alt="Generic placeholder thumbnail"></a>
+        <h4>分组管理</h4>
+        <span class="text-muted">管理背诵系统</span>
+    </div>
+    <div class="col-xs-6 col-sm-3 placeholder">
+        <a href="memorize_meta"><img src="static/fonts/img4.jpg" width="200" height="200" class="img-responsive" alt="Generic placeholder thumbnail"></a>
+        <h4>学习记录</h4>
+        <span class="text-muted">赞助支持，联系作者QQ708883978</span>
+    </div>
+</div>
+
+<h2>学习情况概览</h2>
+
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">签到记录</h4>
+            </div>
+            <div class="modal-body">
+                <div class="calendar">
+                    <div class="title">
+                        <h1  style="position: absolute; left: 50%;transform: translate(-50%, -50%);" class="green" id="month">Month</h1>
+                        <h2  style="position: absolute; left: 50%;top:15%;transform: translate(-50%, -50%);" class="green small" id="year">Year</h2>
+                        <span style="position: absolute; left: 50%;top:25%;transform: translate(-50%, -50%);">
+                <a style="position: relative; left: -40%" class="green small" onclick="prev_f()" id="prev">Prev Month</a>
+                <a style="position: relative; left: 40%" class="green small" onclick="back_f()" id="next">Next Month</a>
+                        </span>
+                    </div>
+                    <div style="position: absolute; left: -20px;top:35%;transform: translate(0%, -10%);" class="body">
+                        <div class="lightgrey body-list">
+                            <ul>
+                                <li>一</li>
+                                <li>二</li>
+                                <li>三</li>
+                                <li>四</li>
+                                <li>五</li>
+                                <li>六</li>
+                                <li>日</li>
+                            </ul>
+                        </div>
+                        <div class="darkgrey body-list">
+                            <ul id="days">
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<table class="table table-hover">
+    <tbody>
+    {% for event in dat %}
+    <tr>
+        <td><span onclick="createmodal({{[event[3],event[11]]}})" data-toggle="modal" data-target="#myModal" class="glyphicon glyphicon-time" aria-hidden="true"></span>{{ event[0] }}</td>
+        {% if event[2] %}
+        <td>任务已结束</td>
+        {% elif event[1] %}
+        <td>未完成任务</td>
+        {% else %}
+        <td>打卡完成</td>
+        {% endif %}
+        <td>已连续打卡<span>{{ event[5] }}</span>天</td>
+        <td>最长打卡<span>{{ event[4] }}</span>天</td>
+    {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

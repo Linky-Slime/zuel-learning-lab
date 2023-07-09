@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import qux %}
+
+{% block sidebar %}
+{% set name='bar' %}
+                <li><a href="schedule">每日打卡</a></li>
+                <li class="active"><a href="create_card_meta">分组管理</a></li>
+                <li><a href="memory_meta">开始学习</a></li>
+                <li><a href="memorize_meta">学习记录</a></li>
+                <li><a href="user">个人信息</a></li>
+{% endblock %}
+
+{% block content %}
+<div class="well editPanel">
+    <h2>选择分组</h2>
+    <br>
+    <div class="btn-group" role="group" aria-label="...">
+        {% for tag in tags %}
+            {% if (tag.tag_id==tag_id) %}
+                <a class="btn btn-primary" href= "{{ 'create_card%d'%tag.tag_id }}" role="button">{{ tag.tag_name }}</a>
+            {% else %}
+                <a class="btn btn-default" href= "{{ 'create_card%d'%tag.tag_id }}" role="button">{{ tag.tag_name }}</a>
+            {% endif %}
+        {% endfor %}
+        <a class="btn btn-info" href="create_tag" role="button">新的分组</a>
+    </div>
+</div>
+
+
+<div class="well editPanel">
+    <form method="post" class="cardForm">
+        {{ dat.csrf_token }}
+        <span class="input-group-btn">
+            {{ dat.event_submit(class="saveButton btn btn-lg btn-primary") }}
+        </span>
+        <br>
+        {{ dat.question.label }}
+        {{ dat.question(class="form-control") }}
+        {{ dat.rank.label }}
+        <button type="button" class="btn btn-default btn-xs" data-toggle="modal" data-target="#myModal">
+            <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span> 说明
+        </button>
+        {{ dat.rank(class="form-control") }}
+        {{ dat.answer.label }}
+        {{ dat.answer(class="form-control", rows="18") }}
+    </form>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">背诵难度说明</h4>
+      </div>
+      <div class="modal-body">
+        每日背诵都可以增加“记忆进度”，当记忆进度达到100%时，可以视为完成了背诵
+          <br>
+          而在不同难度下，连续背诵
+          <span class="label label-info">6</span> /
+          <span class="label label-info">10</span> /
+          <span class="label label-info">14</span> /
+          <span class="label label-info">17</span> /
+          <span class="label label-info">9999</span>
+          天，即可使记忆进度达到100%
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

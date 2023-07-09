@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import qux %}
+
+{% block sidebar %}
+{% set name='bar' %}
+                <li><a href="schedule">每日打卡</a></li>
+                <li class="active"><a href="create_card_meta">分组管理</a></li>
+                <li><a href="memory_meta">开始学习</a></li>
+                <li><a href="memorize_meta">学习记录</a></li>
+                <li><a href="user">个人信息</a></li>
+{% endblock %}
+
+{% block content %}
+
+<div class="well editPanel">
+    <form method="post" class="cardForm">
+        {{ dat.csrf_token }}
+        <span class="input-group-btn">
+            {{ dat.event_submit(class="saveButton btn btn-lg btn-primary") }}
+        </span>
+        <br>
+            {{ dat.name.label }}
+            {{ dat.name(class="form-control") }}
+    </form>
+</div>
+
+
+
+
+{% endblock %}

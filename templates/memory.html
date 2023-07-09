@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import qux %}
+
+{% block head %}
+<style>
+.rt{float:right; border:1px solid #00F; width:100px;}
+.panel-primary{height:300px;}
+</style>
+{% endblock %}
+
+{% block sidebar %}
+{% set name='bar' %}
+                <li><a href="schedule">每日打卡</a></li>
+                <li><a href="create_card_meta">分组管理</a></li>
+                <li class="active"><a href="memory_meta">开始学习</a></li>
+                <li><a href="memorize_meta">学习记录</a></li>
+                <li><a href="user">个人信息</a></li>
+{% endblock %}
+
+
+{% block content %}
+
+
+<script>
+var csrftoken="{{ csrf_token() }}"
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken)
+        }
+    }
+})
+
+function get_answer(){
+    document.getElementById("answer").hidden="";
+}
+
+
+function update(obj) {
+    //获取模态框数据
+    var card_id = obj[0]
+    var action = obj[1]
+    var tag_id = obj[2]
+    $.ajax({
+        type: "post",
+        url: "/memory" + tag_id,
+        data: "&action=" + action + "&card_id=" + card_id ,
+        dataType: '',
+        contentType: "application/x-www-form-urlencoded; charset=utf-8",
+        success: function(result) {
+            //location.reload();
+        }
+    }).done(function(){
+   $('#message').html('test');
+   window.location.href = "/memory" + tag_id;
+}).fail(function(response){
+   $('#message').html(response['responseText']);
+});
+}
+</script>
+
+
+
+<div class="well editPanel">
+    <h2>选择分组</h2>
+    <br>
+    <div class="btn-group" role="group" aria-label="...">
+        {% for tag in tags %}
+            {% if (tag.tag_id==tag_id) %}
+                <a class="btn btn-primary" href= "{{ 'memory%d'%tag.tag_id }}" role="button">{{ tag.tag_name }}</a>
+            {% else %}
+                <a class="btn btn-default" href= "{{ 'memory%d'%tag.tag_id }}" role="button">{{ tag.tag_name }}</a>
+            {% endif %}
+        {% endfor %}
+        <a class="btn btn-info" href="create_tag" role="button">新的分组</a>
+    </div>
+</div>
+
+<div class="row memorizePanel">
+    <div class="col-xs-8 col-xs-offset-2">
+        <div class="panel panel-default cardFront">
+            <div class="panel-body">
+                <div class="alignContainer">
+                    <div class="alignMiddle frontText">
+                        {% if card.question %}
+                        <h3 class="text-center" >{{ card.question }}</h3>
+                        {% else %}
+                        <h3 class="text-center" >该分组已完成背诵</h3>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="panel panel-primary cardBack">
+            <div class="panel-body" hidden="true" id="answer">
+                <div class="alignContainer">
+                    <div class="alignMiddle frontText">
+                        <div class="pre" style="white-space: pre-line;">
+                            {{ card.answer }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% if card.question %}
+        <div class="progress">
+            <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="{{card.memory*100}}" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: {{card.memory*100}}%;">
+                {{card.memory*100}}
+            </div>
+        </div>
+        {% else %}
+        <div class="progress">
+            <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: 100%;">
+                {{100}} %
+            </div>
+        </div>
+        {% endif %}
+
+        <span>
+            <button type="button" class="btn btn-default" onclick="get_answer()">查看答案</button>
+            <span>
+                <div class="modal-footer">
+            <button type="button" class="btn btn-warning" onclick="update({{[card.card_id,0,tag_id]}})">还没记住</button>
+            <button type="button" class="btn btn-sucess" onclick="update({{[card.card_id,1,tag_id]}})">记住了</button>
+            <button type="button" class="btn btn-info" onclick="update({{[card.card_id,2,tag_id]}})">明天再记</button>
+            </div>
+            </span>
+        </span>
+
+    </div>
+</div>
+
+{% endblock %}
+
