@@ -10,7 +10,7 @@ import sys
 
 import click
 from flask import Flask
-from flask import redirect, url_for, render_template, flash, session, Markup,request
+from flask import redirect, url_for, render_template, flash, session, Markup,request, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from wtforms import SubmitField, TextAreaField, StringField, SelectField, PasswordField
@@ -21,6 +21,8 @@ from flask_wtf.csrf import CSRFProtect
 from datetime import datetime, timedelta
 
 import math
+from docx import Document
+import json
 
 # 测试
 # 测试2
@@ -546,6 +548,28 @@ def delate_card():
         db.session.delete(note)
         db.session.commit()
     return redirect(url_for('memorize_meta'))
+
+
+@app.route('/get_word')
+def export_word():
+    cookieCart=request.cookies.get('cookieCart')
+    if cookieCart:
+        cookieCart = json.loads(cookieCart)
+        # 创建Word文档对象
+        doc = Document()
+        # 添加标题
+        doc.add_heading('Export Word', 0)
+        pid = 1
+        for id in cookieCart:
+            card = Card.query.filter(Card.card_id == id).first()
+            doc.add_paragraph("Q"+str(pid)+"."+card.question+":")
+            doc.add_paragraph("answer"+":"+card.answer+"\n\n")
+            pid = pid+1
+        doc.save(str(session.get('user_id'))+'export.docx')
+        return send_file(str(session.get('user_id'))+'export.docx', download_name='example.docx', as_attachment=True)
+    else:
+        pass
+    return f'{cookieCart}'
 
 # 404 error handler
 @app.errorhandler(404)

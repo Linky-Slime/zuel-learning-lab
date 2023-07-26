@@ -78,6 +78,114 @@ function delate(obj) {
    $('#message').html(response['responseText']);
 });
 }
+
+// wlist相关
+// 定义一个cookie变量来存储购物车的内容
+// var cookieCart = {};
+
+var cookieString = document.cookie;
+
+// 在cookie字符串中搜索'cookieCart='
+var startIndex = cookieString.indexOf('cookieCart=');
+
+// 如果找到'cookieCart='，则从该索引开始提取后面的内容
+if (startIndex !== -1) {
+    var value = cookieString.substring(startIndex + 11); // 提取'cookieCart='后的内容
+    console.log('cookieCart=后面的内容是: ', value);
+    var cookieCart = JSON.parse(value)
+} else {
+    console.log('0000');
+    var cookieCart = {};
+}
+
+function addToCart(id, name) {
+  // 检查cookie中是否存在该商品
+  if(cookieCart[id]) {
+    // 如果存在，就更新数量
+    // cookieCart[id].quantity++;
+  } else {
+    // 如果不存在，就添加新的商品
+    cookieCart[id] = {
+      name: name,
+      quantity: 1
+    };
+  }
+  // 保存cookie
+  saveCartInCookie(cookieCart);
+}
+
+// 从购物车中删除商品
+function removeFromCart(id) {
+  // 检查cookie中是否存在该商品
+  if(cookieCart[id]) {
+    // 如果存在，就减少数量，并检查是否需要删除该商品
+    cookieCart[id].quantity--;
+    if(cookieCart[id].quantity <= 0) {
+      delete cookieCart[id];
+    }
+  }
+  // 保存cookie
+  saveCartInCookie(cookieCart);
+  displayCart()
+}
+
+// 在用户浏览器中保存购物车内容
+function saveCartInCookie(cart) {
+  document.cookie = "cookieCart=" + JSON.stringify(cart);
+}
+
+// 从用户浏览器中获取购物车内容
+function getCartFromCookie() {
+  var cookie = document.cookie;
+  if(cookie.indexOf("cookieCart=") >= 0) {
+    var cart = JSON.parse(decodeURIComponent(cookie.split("cookieCart=")[1]));
+    return cart;
+  } else {
+    return {};
+  }
+}
+
+// 在页面上显示购物车内容
+function displayCart() {
+  var cart = getCartFromCookie();
+  var table = document.getElementById("wtable");
+
+  while(table.firstChild) {
+    table.removeChild(table.firstChild);
+  }
+  var th = document.createElement("th");
+  th.innerHTML = "序号";
+  table.appendChild(th);
+  var th2 = document.createElement("th");
+  th2.innerHTML = "问题";
+  table.appendChild(th2);
+  var th3 = document.createElement("th");
+  th3.innerHTML = "删除";
+  table.appendChild(th3);
+  var index = 1
+  for(var id in cart) {
+    var row = document.createElement("tr");
+    var nameCell = document.createElement("td");
+    nameCell.textContent = index;
+
+    row.appendChild(nameCell);
+
+    var nameCell = document.createElement("td");
+    nameCell.textContent = cart[id].name;
+    row.appendChild(nameCell);
+
+    var nameCell = document.createElement("td");
+    nameCell.textContent = "pass";
+    nameCell.className = "btn btn-default btn-sm";
+    nameCell.setAttribute("onclick", "removeFromCart("+id+")");
+    row.appendChild(nameCell);
+
+    table.appendChild(row);
+
+    index = index+1
+  }
+}
+
 </script>
 
 
@@ -101,6 +209,9 @@ function delate(obj) {
     <table class="table table-hover">
         <thead>
         <tr>
+            <th><button type="button" class="btn btn-default btn-sm">
+                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>全选导出
+            </button></th>
             <th>问题</th>
             <th>记忆进度</th>
             <th>上次背诵</th>
@@ -110,6 +221,9 @@ function delate(obj) {
         <tbody>
         {% for card in cards %}
         <tr>
+            <th><button type="button" class="btn btn-default btn-sm" onclick="addToCart({{card.card_id}},'{{card.question}}')">
+                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>导出
+            </button></th>
             <th scope="row"><button type="button" class="btn btn-default btn-sm"  data-toggle="modal" data-target="#Modal{{card.card_id}}"><span class="
 glyphicon glyphicon-zoom-in" aria-hidden="true"></span></button>{{ card.question }}</th>
             <td>{{ card.memory }}</td>
@@ -166,6 +280,7 @@ glyphicon glyphicon-zoom-in" aria-hidden="true"></span></button>{{ card.question
 
 </div>>
 
+<button type="button" class="btn btn-default" data-toggle="modal" onclick="displayCart()" data-target="#wlist">word操作</button>
 
 <!-- Modal -->
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
@@ -203,6 +318,37 @@ glyphicon glyphicon-zoom-in" aria-hidden="true"></span></button>{{ card.question
                 <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
                 <button type="button" class="btn btn-info" onclick="update({{[tag_id,page]}})">保存</button>
                 <button type="button" class="btn btn-warning" onclick="delate({{[tag_id,page]}})">删除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="wlist" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="wlist_label">word list</h4>
+            </div>
+            <div class="modal-body">
+<!--                <h4 class="modal-title" id="missionid"></h4>-->
+                <div class="modal-body" >
+                    <table class="table table-hover" id="wtable">
+                        <thead>
+                        <tr>
+                            <th>id</th>
+                            <th>问题</th>
+                            <th>删除</th>
+                            <th>移动</th>
+                        </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <a type="button" class="btn btn-info" href="get_word">导出word</a>
             </div>
         </div>
     </div>
